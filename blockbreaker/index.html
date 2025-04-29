@@ -1,0 +1,178 @@
+<canvas id="gameCanvas" width="600" height="400" style="background:#eee"></canvas>
+
+<script>
+    class Ball {
+        constructor(x, y, radius, speedX, speedY) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.speedX = speedX;
+            this.speedY = speedY;
+        }
+
+        draw(ctx) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        move() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+        }
+
+        bounceWalls(canvas) {
+            if (this.x <= this.radius || this.x >= canvas.width - this.radius) {
+                this.speedX *= -1;
+            }
+            if (this.y <= this.radius) {
+                this.speedY *= -1;
+            }
+        }
+
+        bouncePaddle(paddle) {
+            if (
+                this.y + this.radius >= paddle.y &&
+                this.x >= paddle.x &&
+                this.x <= paddle.x + paddle.width
+            ) {
+                this.speedY *= -1;
+            }
+        }
+
+        reset(canvas) {
+            if (this.y > canvas.height) {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.speedY *= -1;
+            }
+        }
+
+        checkBrickCollision(bricks) {
+            for (let brick of bricks) {
+                if (!brick.destroyed) {
+                    if (
+                        this.x + this.radius > brick.x &&
+                        this.x - this.radius < brick.x + brick.width &&
+                        this.y + this.radius > brick.y &&
+                        this.y - this.radius < brick.y + brick.height
+                    ) {
+                        this.speedY *= -1;
+                        brick.destroyed = true;
+                        break; // Only destroy one brick at a time
+                    }
+                }
+            }
+        }
+
+
+        update(canvas, paddle, bricks) {
+            this.move();
+            this.bounceWalls(canvas);
+            this.bouncePaddle(paddle);
+            this.checkBrickCollision(bricks);
+            this.reset(canvas);
+        }
+
+    }
+
+
+    class Paddle {
+        constructor(x, y, width, height, speed) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.speed = speed;
+            this.moveLeft = false;
+            this.moveRight = false;
+        }
+
+        draw(ctx) {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+
+        move(canvas) {
+            if (this.moveLeft && this.x > 0) {
+                this.x -= this.speed;
+            }
+            if (this.moveRight && this.x + this.width < canvas.width) {
+                this.x += this.speed;
+            }
+        }
+    }
+
+    class Brick {
+        constructor(x, y, width, height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.destroyed = false;
+        }
+
+        draw(ctx) {
+            if (!this.destroyed) {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+        }
+    }
+
+    const bricks = [];
+
+    const rows = 3;
+    const columns = 6;
+    const brickWidth = 80;
+    const brickHeight = 20;
+    const padding = 10;
+    const offsetTop = 30;
+    const offsetLeft = 35;
+
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < columns; c++) {
+            const x = offsetLeft + c * (brickWidth + padding);
+            const y = offsetTop + r * (brickHeight + padding);
+            bricks.push(new Brick(x, y, brickWidth, brickHeight));
+        }
+    }
+
+
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const ball = new Ball(300, 200, 10, 3, 3);
+    const paddle = new Paddle(250, 370, 100, 10, 5);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowLeft') paddle.moveLeft = true;
+        if (e.key === 'ArrowRight') paddle.moveRight = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'ArrowLeft') paddle.moveLeft = false;
+        if (e.key === 'ArrowRight') paddle.moveRight = false;
+    });
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ball.update(canvas, paddle, bricks);
+        paddle.move(canvas);
+
+        ball.draw(ctx);
+        paddle.draw(ctx);
+
+        for (let brick of bricks) {
+            brick.draw(ctx);
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+</script>

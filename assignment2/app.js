@@ -11,13 +11,33 @@ let groceriesList = document.getElementById("groceriesList");
 
 let addItemButton = document.getElementById("addItemButton");
 
-addItemButton.addEventListener("click", addItem);
+addItemButton.addEventListener("click", (e) => {
+    e.preventDefault(); // Prevent the default form submission behavior
+    console.log(e);
+    addItem();
+});
+
+document.querySelector('form').addEventListener('submit', (e) => {
+    e.preventDefault(); // Prevent the default form submission behavior
+    console.log(e);
+    addItem();
+});
+
 
 function renderList() {
     groceriesList.innerHTML = ""; // Clear the list before rendering
     groceries.forEach((item, index) => {
         let li = document.createElement("li");
-        li.textContent = item;
+        let button = document.createElement("button");
+        button.innerHTML = "&times;";
+
+        button.className = "remove-button";
+        button.addEventListener("click", () => {
+            removeItem(item); // Remove the item from the list when the button is clicked
+        });
+
+        li.textContent = item + " ";
+        li.appendChild(button);
         groceriesList.appendChild(li);
     }
     );
@@ -31,4 +51,17 @@ function addItem() {
     }
     renderList();
     console.log(groceries);
+}
+
+// function removeItem(index) {
+//     groceries.splice(index, 1); // Remove the item from the array
+//     renderList(); // Re-render the list to reflect the changes
+// }
+
+function removeItem(item) {
+    let index = groceries.indexOf(item); // Find the index of the item to be removed
+    if (index !== -1) {
+        groceries.splice(index, 1); // Remove the item from the array
+        renderList(); // Re-render the list to reflect the changes
+    }
 }
