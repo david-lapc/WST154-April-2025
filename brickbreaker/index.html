@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+
+        canvas.width = 800;
+        canvas.height = 600;
+
+        const ctx = canvas.getContext('2d');
+
+        class Vector {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+        }
+
+        class Shape {
+            constructor(position, color) {
+                this.position = position;
+                this.color = color;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.position.x, this.position.y, 50, 50);
+            }
+        }
+
+        class Brick extends Shape {
+            constructor(position, color, width, height) {
+                super(position, color);
+                this.width = width;
+                this.height = height;
+                this.isBroken = false;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+            }
+
+            break() {
+                this.isBroken = true;
+            }
+        }
+
+        class Paddle extends Shape {
+            constructor(position, color, width, height) {
+                super(position, color);
+                this.width = width;
+                this.height = height;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+            }
+        }
+
+        class Ball extends Shape {
+            constructor(position, color, radius) {
+                super(position, color);
+                this.radius = radius;
+                this.velocity = new Vector(10, -10);
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            move() {
+                this.position.x += this.velocity.x;
+                this.position.y += this.velocity.y;
+            }
+
+            bounceWalls(canvas) {
+                if (this.position.x + this.radius > canvas.width || this.position.x - this.radius < 0) {
+                    this.velocity.x *= -1;
+                }
+                if (this.position.y - this.radius < 0) {
+                    this.velocity.y *= -1;
+                }
+            }
+
+            bouncePaddle(paddle) {
+                if (this.position.x + this.radius > paddle.position.x && this.position.x - this.radius < paddle.position.x + paddle.width &&
+                    this.position.y + this.radius > paddle.position.y && this.position.y - this.radius < paddle.position.y + paddle.height) {
+                    this.velocity.y *= -1;
+                    const offsetX = (this.position.x - (paddle.position.x + paddle.width / 2)) / (paddle.width / 2);
+                    this.velocity.x += offsetX * 2; // Adjust the angle based on where it hits the paddle
+                }
+            }
+
+            checkBrickCollision(bricks) {
+                for (let brick of bricks) {
+                    if (!brick.isBroken && this.position.x + this.radius > brick.position.x && this.position.x - this.radius < brick.position.x + brick.width &&
+                        this.position.y + this.radius > brick.position.y && this.position.y - this.radius < brick.position.y + brick.height) {
+                        brick.break();
+                        this.velocity.y *= -1; // Bounce
+                    }
+                }
+            }
+
+            reset() {
+                if (this.position.y + this.radius > canvas.height) {
+                    // Reset ball position and velocity
+                    console.log("Game Over! Resetting ball position.");
+                    this.position.x = canvas.width / 2;
+                    this.position.y = canvas.height - 50;
+                }
+            }
+        }
+
+        const paddle = new Paddle(new Vector(canvas.width / 2 - 50, canvas.height - 30), 'blue', 100, 20);
+
+        const ball = new Ball(new Vector(canvas.width / 2, canvas.height - 50), 'red', 10);
+        const bricks = [];
+        const rows = 5;
+        const cols = 7;
+        const brickWidth = 100;
+        const brickHeight = 20;
+
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                bricks.push(new Brick(new Vector(j * (brickWidth + 10) + 20, i * (brickHeight + 10) + 20), 'green', brickWidth, brickHeight));
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            paddle.draw();
+            ball.draw();
+            for (let brick of bricks) {
+                if (!brick.isBroken) {
+                    brick.draw();
+                }
+            }
+        }
+
+        function update() {
+            ball.move();
+            ball.bounceWalls(canvas);
+            ball.bouncePaddle(paddle);
+            ball.checkBrickCollision(bricks);
+            ball.reset();
+        }
+
+        function gameLoop() {
+            draw();
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function animateWithSetInterval() {
+            setInterval(() => {
+                console.log(x++);
+            }, 1000);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft') {
+                paddle.position.x -= 10;
+            } else if (event.key === 'ArrowRight') {
+                paddle.position.x += 10;
+            }
+        });
+
+        document.addEventListener('mousemove', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            if (mouseX > 0 && mouseX < canvas.width) {
+                paddle.position.x = mouseX - paddle.width / 2;
+            }
+        });
+
+        gameLoop();
+
+
+
+    </script>
+</body>
+
+</html>

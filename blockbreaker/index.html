@@ -158,6 +158,14 @@
         if (e.key === 'ArrowRight') paddle.moveRight = false;
     });
 
+    document.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        if (mouseX > 0 && mouseX < canvas.width) {
+            paddle.x = mouseX - paddle.width / 2;
+        }
+    });
+
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
